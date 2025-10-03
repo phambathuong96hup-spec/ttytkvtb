@@ -1,69 +1,101 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gateway - Bắt buộc chọn khoa phòng</title>
+    <title>LỐI VÀO DUY NHẤT - Hệ thống Notion</title>
     <style>
         body { 
             font-family: Arial, sans-serif; 
-            max-width: 600px; 
-            margin: 50px auto; 
+            max-width: 800px; 
+            margin: 0 auto; 
             padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #007cba;
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
             text-align: center;
         }
-        .gateway {
-            border: 2px solid #007cba;
+        .content {
+            background: white;
             padding: 30px;
-            border-radius: 10px;
-        }
-        select, button {
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-            width: 80%;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 5px;
             margin: 20px 0;
-            text-align: left;
+        }
+        select, button {
+            padding: 12px;
+            margin: 10px 5px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #005a87; }
+        .bookmark-instruction {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="gateway">
-        <h1>🔐 TRUY CẬP HỆ THỐNG</h1>
+    <div class="header">
+        <h1>🚪 LỐI VÀO DUY NHẤT</h1>
+        <p>Hệ thống Quản lý Thông tin Nội bộ</p>
+    </div>
+    
+    <div class="content">
         <div class="warning">
-            <strong>⚠️ QUAN TRỌNG:</strong> Bạn PHẢI truy cập qua trang này. 
-            Bookmark trang Notion trực tiếp sẽ KHÔNG hoạt động.
+            <strong>⚠️ QUAN TRỌNG:</strong> Đây là <strong>lối vào duy nhất</strong> để truy cập hệ thống. 
+            <strong>KHÔNG THỂ</strong> bookmark trang Notion trực tiếp.
         </div>
         
+        <h3>Bước 1: Chọn khoa/phòng của bạn</h3>
         <select id="department">
             <option value="">-- Chọn khoa/phòng --</option>
-            <option value="khoa_cnht">Khoa CNTT</option>
+            <option value="khoa_cnht">Khoa Công nghệ Thông tin</option>
             <option value="khoa_kt">Khoa Kinh tế</option>
             <option value="phong_daotao">Phòng Đào tạo</option>
         </select>
         
-        <br>
-        <button onclick="grantAccess()">CẤP QUYỀN TRUY CẬP</button>
+        <button onclick="grantAccess()" id="accessBtn">CẤP QUYỀN TRUY CẬP</button>
         
-        <div id="accessPanel" style="display: none; margin-top: 20px;">
-            <h3>✅ Truy cập được cấp phép</h3>
-            <p>Bạn có thể truy cập Notion trong <strong id="countdown">2:00</strong> phút</p>
-            <button onclick="openNotion()">MỞ NOTION NGAY</button>
-            <p><small>Link sẽ tự động hết hạn sau 2 phút</small></p>
+        <div id="accessPanel" style="display: none; margin-top: 30px;">
+            <h3>✅ Quyền truy cập đã được cấp</h3>
+            <p>Khoa/phòng: <strong id="currentDept"></strong></p>
+            <p>Thời gian cấp: <strong id="accessTime"></strong></p>
+            
+            <div style="margin: 20px 0;">
+                <button onclick="openNotionTab()" style="background: #28a745; padding: 15px 30px;">
+                    🚀 MỞ NOTION TRONG TAB MỚI
+                </button>
+            </div>
+            
+            <div class="bookmark-instruction">
+                <strong>📌 HƯỚNG DẪN BOOKMARK:</strong><br>
+                1. Bookmark trang NÀY: <code id="thisPageUrl"></code><br>
+                2. <strong>KHÔNG</strong> bookmark trang Notion<br>
+                3. Mỗi lần truy cập, mở bookmark này và chọn khoa/phòng
+            </div>
         </div>
     </div>
 
     <script>
-        // Biến toàn cục để theo dõi
-        window.accessGranted = false;
-        window.accessExpiry = null;
-
         function grantAccess() {
             const department = document.getElementById('department').value;
             if (!department) {
@@ -71,78 +103,42 @@
                 return;
             }
 
-            // Tạo session
-            const now = Date.now();
-            const expiry = now + (2 * 60 * 1000); // 2 phút
-            
-            const sessionData = {
+            // Lưu thông tin session
+            const accessData = {
                 department: department,
                 granted: true,
-                expiry: expiry,
-                sessionId: 'session_' + now + '_' + Math.random().toString(36).substr(2, 9)
+                timestamp: new Date().toISOString()
             };
-            
-            // Lưu vào sessionStorage (sẽ mất khi đóng tab)
-            sessionStorage.setItem('notionAccess', JSON.stringify(sessionData));
+            sessionStorage.setItem('notionAccess', JSON.stringify(accessData));
             
             // Hiển thị panel truy cập
+            document.getElementById('currentDept').textContent = 
+                document.getElementById('department').options[document.getElementById('department').selectedIndex].text;
+            document.getElementById('accessTime').textContent = new Date().toLocaleTimeString('vi-VN');
+            document.getElementById('thisPageUrl').textContent = window.location.href;
             document.getElementById('accessPanel').style.display = 'block';
-            startCountdown(expiry);
             
-            // Ghi log (có thể gửi đến Google Analytics hoặc server)
-            console.log('Access granted for:', department, 'Expiry:', new Date(expiry));
+            // Cuộn xuống panel
+            document.getElementById('accessPanel').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function openNotion() {
-            // Đánh dấu đã sử dụng
-            window.accessGranted = true;
-            
+        function openNotionTab() {
             // Mở Notion trong tab mới
             window.open('https://young-mastodon-f07.notion.site/2800bc1073c28033a764f18b145aad02', '_blank');
-            
-            // Cũng có thể mở trong tab hiện tại
-            // window.location.href = 'https://young-mastodon-f07.notion.site/2800bc1073c28033a764f18b145aad02';
         }
 
-        function startCountdown(expiry) {
-            function update() {
-                const now = Date.now();
-                const remaining = expiry - now;
-                
-                if (remaining <= 0) {
-                    document.getElementById('countdown').textContent = '0:00';
-                    document.getElementById('accessPanel').innerHTML = 
-                        '<p style="color: red;">⚠️ Phiên truy cập đã hết hạn. Vui lòng làm mới trang.</p>';
-                    return;
-                }
-                
-                const minutes = Math.floor(remaining / 60000);
-                const seconds = Math.floor((remaining % 60000) / 1000);
-                document.getElementById('countdown').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
-                setTimeout(update, 1000);
-            }
-            update();
-        }
-
-        // Kiểm tra khi trang load
+        // Kiểm tra nếu đã có quyền truy cập trước đó
         window.addEventListener('load', function() {
             const saved = sessionStorage.getItem('notionAccess');
             if (saved) {
                 const data = JSON.parse(saved);
-                if (Date.now() < data.expiry) {
-                    // Vẫn còn hiệu lực
-                    document.getElementById('accessPanel').style.display = 'block';
-                    startCountdown(data.expiry);
-                } else {
-                    // Đã hết hạn
-                    sessionStorage.removeItem('notionAccess');
-                }
+                document.getElementById('department').value = data.department;
+                grantAccess(); // Tự động hiển thị panel truy cập
             }
+            
+            // Hiển thị URL hiện tại để người dùng bookmark
+            document.getElementById('thisPageUrl').textContent = window.location.href;
         });
-
-        // 🚨 QUAN TRỌNG: Script chặn truy cập trực tiếp đến Notion
-        // Tạo một trang HTML đơn giản để chặn direct access
     </script>
 </body>
 </html>
