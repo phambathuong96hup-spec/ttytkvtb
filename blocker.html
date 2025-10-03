@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Truy cập bị từ chối</title>
+</head>
+<body>
+    <div style="text-align: center; margin-top: 100px;">
+        <h1>🚫 TRUY CẬP BỊ TỪ CHỐI</h1>
+        <p>Bạn không thể truy cập trực tiếp đến trang Notion.</p>
+        <p>Vui lòng truy cập qua: 
+            <a href="https://yourusername.github.io/notion-gateway">
+                https://yourusername.github.io/notion-gateway
+            </a>
+        </p>
+        <button onclick="redirectToGateway()">ĐẾN TRANG TRUY CẬP</button>
+    </div>
+
+    <script>
+        function redirectToGateway() {
+            window.location.href = 'https://yourusername.github.io/notion-gateway';
+        }
+        
+        // Tự động redirect sau 3 giây
+        setTimeout(redirectToGateway, 3000);
+    </script>
+</body>
+</html>
