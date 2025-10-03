@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chọn Khoa Phòng - Notion</title>
+    <title>Gateway - Chọn Khoa Phòng</title>
     <style>
         * {
             margin: 0;
@@ -41,6 +41,20 @@
             color: #666;
             margin-bottom: 30px;
             line-height: 1.5;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .warning h3 {
+            color: #856404;
+            margin-bottom: 5px;
         }
         
         .select-group {
@@ -105,13 +119,29 @@
             margin-bottom: 20px;
             color: #667eea;
         }
+        
+        .access-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">📋</div>
-        <h1>Chào mừng bạn!</h1>
-        <p class="description">Vui lòng chọn khoa/phòng của bạn để tiếp tục truy cập vào hệ thống Notion.</p>
+        <div class="logo">🔐</div>
+        <h1>TRUY CẬP HỆ THỐNG NOTION</h1>
+        <p class="description">Vui lòng chọn khoa/phòng của bạn để tiếp tục</p>
+        
+        <div class="warning">
+            <h3>📌 Lưu ý quan trọng:</h3>
+            <p>• Không thể bookmark trang Notion trực tiếp<br>
+            • Mỗi lần truy cập cần đi qua trang này<br>
+            • Link truy cập chỉ có hiệu lực trong 30 phút</p>
+        </div>
         
         <div class="select-group">
             <label for="department">Khoa/Phòng:</label>
@@ -132,13 +162,32 @@
             Vui lòng chọn khoa/phòng trước khi tiếp tục!
         </div>
         
-        <button class="btn" onclick="redirectToNotion()" id="continueBtn">
-            Tiếp tục đến Notion
+        <button class="btn" onclick="generateAccessLink()" id="continueBtn">
+            Tạo Link Truy Cập
         </button>
+        
+        <div class="access-info" id="accessInfo" style="display: none;">
+            <strong>Thông tin truy cập:</strong><br>
+            Khoa/phòng: <span id="selectedDept"></span><br>
+            Thời gian tạo: <span id="accessTime"></span><br>
+            Hết hạn: <span id="expiryTime"></span>
+        </div>
     </div>
 
     <script>
-        function redirectToNotion() {
+        // Danh sách khoa/phòng với tên hiển thị
+        const departmentNames = {
+            'khoa_cong_nghe_thong_tin': 'Khoa Công nghệ Thông tin',
+            'khoa_ky_thuat': 'Khoa Kỹ thuật',
+            'khoa_kinh_te': 'Khoa Kinh tế',
+            'khoa_y_duoc': 'Khoa Y Dược',
+            'phong_dao_tao': 'Phòng Đào tạo',
+            'phong_hanh_chinh': 'Phòng Hành chính',
+            'phong_ke_hoach': 'Phòng Kế hoạch',
+            'phong_nhan_su': 'Phòng Nhân sự'
+        };
+
+        function generateAccessLink() {
             const department = document.getElementById('department').value;
             const errorMessage = document.getElementById('errorMessage');
             
@@ -149,33 +198,131 @@
             
             errorMessage.style.display = 'none';
             
-            // Lưu lựa chọn vào localStorage (tùy chọn)
-            localStorage.setItem('selectedDepartment', department);
-            localStorage.setItem('selectionTime', new Date().toISOString());
+            // Tạo token ngẫu nhiên với thời hạn
+            const token = generateToken();
+            const now = new Date();
+            const expiry = new Date(now.getTime() + 30 * 60 * 1000); // 30 phút
             
-            // Hiển thị thông báo chuyển hướng
+            // Lưu thông tin truy cập
+            const accessData = {
+                token: token,
+                department: department,
+                created: now.toISOString(),
+                expires: expiry.toISOString(),
+                used: false
+            };
+            
+            // Lưu vào localStorage để verify (trong thực tế nên gửi lên server)
+            localStorage.setItem('notionAccess', JSON.stringify(accessData));
+            
+            // Hiển thị thông tin truy cập
+            displayAccessInfo(department, now, expiry);
+            
+            // Tạo URL với token
+            const notionURL = createAccessURL(token, department);
+            
+            // Cập nhật nút thành "Truy cập ngay"
             const btn = document.getElementById('continueBtn');
-            btn.textContent = 'Đang chuyển hướng...';
-            btn.disabled = true;
+            btn.textContent = '🚀 Truy cập ngay';
+            btn.onclick = function() {
+                window.location.href = notionURL;
+            };
             
-            // Chuyển hướng đến trang Notion sau 1 giây
+            // Tự động chuyển hướng sau 5 giây
             setTimeout(() => {
-                window.location.href = 'https://young-mastodon-f07.notion.site/2800bc1073c28033a764f18b145aad02';
-            }, 1000);
+                window.location.href = notionURL;
+            }, 5000);
+        }
+        
+        function generateToken() {
+            // Tạo token ngẫu nhiên: timestamp + random string
+            const timestamp = Date.now().toString(36);
+            const randomStr = Math.random().toString(36).substring(2, 15);
+            return `${timestamp}_${randomStr}`;
+        }
+        
+        function createAccessURL(token, department) {
+            // Tạo URL với token và thông tin khoa/phòng
+            const baseURL = 'https://young-mastodon-f07.notion.site/2800bc1073c28033a764f18b145aad02';
+            const params = new URLSearchParams({
+                access_token: token,
+                dept: department,
+                ts: Date.now().toString()
+            });
+            
+            return `${baseURL}?${params.toString()}`;
+        }
+        
+        function displayAccessInfo(department, created, expiry) {
+            const accessInfo = document.getElementById('accessInfo');
+            const selectedDept = document.getElementById('selectedDept');
+            const accessTime = document.getElementById('accessTime');
+            const expiryTime = document.getElementById('expiryTime');
+            
+            selectedDept.textContent = departmentNames[department];
+            accessTime.textContent = created.toLocaleTimeString('vi-VN');
+            expiryTime.textContent = expiry.toLocaleTimeString('vi-VN');
+            
+            accessInfo.style.display = 'block';
         }
         
         // Thêm event listener cho select
         document.getElementById('department').addEventListener('change', function() {
             const errorMessage = document.getElementById('errorMessage');
             errorMessage.style.display = 'none';
+            
+            // Reset button nếu thay đổi lựa chọn
+            const btn = document.getElementById('continueBtn');
+            btn.textContent = 'Tạo Link Truy Cập';
+            btn.onclick = generateAccessLink;
+            
+            // Ẩn thông tin truy cập cũ
+            document.getElementById('accessInfo').style.display = 'none';
         });
         
         // Cho phép nhấn Enter để tiếp tục
         document.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
-                redirectToNotion();
+                generateAccessLink();
             }
         });
+        
+        // Kiểm tra nếu có access token hợp lệ trong URL (khi quay lại)
+        function checkURLForAccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('access_token');
+            const dept = urlParams.get('dept');
+            
+            if (token && dept) {
+                // Có token trong URL, verify và chuyển hướng
+                verifyAndRedirect(token, dept);
+            }
+        }
+        
+        function verifyAndRedirect(token, dept) {
+            const storedAccess = localStorage.getItem('notionAccess');
+            if (storedAccess) {
+                const accessData = JSON.parse(storedAccess);
+                const now = new Date();
+                const expiry = new Date(accessData.expires);
+                
+                if (accessData.token === token && 
+                    accessData.department === dept && 
+                    now < expiry && 
+                    !accessData.used) {
+                    
+                    // Đánh dấu đã sử dụng
+                    accessData.used = true;
+                    localStorage.setItem('notionAccess', JSON.stringify(accessData));
+                    
+                    // Chuyển hướng đến Notion
+                    window.location.href = 'https://young-mastodon-f07.notion.site/2800bc1073c28033a764f18b145aad02';
+                }
+            }
+        }
+        
+        // Chạy kiểm tra khi trang load
+        window.addEventListener('load', checkURLForAccess);
     </script>
 </body>
 </html>
