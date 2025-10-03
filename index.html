@@ -201,7 +201,7 @@
             // Tạo token ngẫu nhiên với thời hạn
             const token = generateToken();
             const now = new Date();
-            const expiry = new Date(now.getTime() + 30 * 60 * 1000); // 30 phút
+            const expiry = new Date(now.getTime() + 2 * 60 * 1000); // 30 phút
             
             // Lưu thông tin truy cập
             const accessData = {
